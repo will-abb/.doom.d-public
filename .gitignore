@@ -1,0 +1,12 @@
+.DS_Store
+.idea
+*.log
+tmp/
+
+
+flycheck_init.el
+flycheck_config.el
+
+#not needed with new changes
+~/.doom.d/config.el
+config.el

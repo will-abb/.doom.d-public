@@ -1,0 +1,467 @@
+#+TITLE: Doom Emacs Configuration
+#+PROPERTY: header-args :tangle ~/.doom.d/config.el
+* Core Setup
+** User Information
+#+BEGIN_SRC emacs-lisp
+(setq user-full-name "Williams Bosch-Bello")
+(setq user-mail-address "williamsbosch@gmail.com")
+#+END_SRC
+
+** Load Custom Files
+#+BEGIN_SRC emacs-lisp
+(load! "custom_functions.el")
+(load! "my_hooks.el")
+(load! "work_functions.el")
+(load! "org_config.el")
+(load! "ai.el")
+(load! "sops_config.el")
+(load! "grafana.el")
+(load! "vterm_centaur.el")
+(load! "magit_functions.el")
+(load! "tramp_ssm_ssh.el")
+(load! "ssm.el")
+(load! "tramp_functions.el")
+(load! "ssm_run_command.el")
+(load! "aws_ecs_cli.el")
+(load! "aws_helper.el")
+(load! "aws_ec2_cli.el")
+(load! "org-graphing.el")
+(load! "quote-string.el")
+(load! "org-jira.el")
+(load! "temporary-functions.el")
+;;always keep keybinds last
+(load! "key_bindings.el")
+#+END_SRC
+
+** Setting Environment Variables
+#+BEGIN_SRC emacs-lisp
+;; (setenv "INFRACOST_API_KEY" "") ;; terraform cost estimate
+;; (setenv "AWS_PROFILE" "") ;; aws account/region
+(setenv "ANSIBLE_COLLECTIONS_PATH" "~/virtual_environments/ansible/lib/python3.10/site-packages/ansible_collections") ;fixes ansible issues finding collections
+#+END_SRC
+
+* UI Customizations
+** Fonts
+#+BEGIN_SRC emacs-lisp
+(setq doom-font (font-spec :size 24))
+#+END_SRC
+
+** All The Icons Dired
+#+BEGIN_SRC emacs-lisp
+(use-package! all-the-icons-dired
+  :hook (dired-mode . all-the-icons-dired-mode))
+#+END_SRC
+
+** Themes
+#+BEGIN_SRC emacs-lisp
+(setq doom-theme 'doom-dark+)
+#+END_SRC
+
+** Line Numbers
+#+BEGIN_SRC emacs-lisp
+(setq display-line-numbers-type t)
+#+END_SRC
+
+** Visual Line Mode (Wrap Long Lines)
+#+BEGIN_SRC emacs-lisp
+(global-visual-line-mode t)
+#+END_SRC
+
+** Maximize Frame at Startup
+#+BEGIN_SRC emacs-lisp
+(my/ensure-frame-maximized)
+#+END_SRC
+
+** Modeline Configuration
+#+BEGIN_SRC emacs-lisp
+(setq doom-modeline-vcs-max-length 40) ;; to see more of current branch info
+#+END_SRC
+
+** Centaur Tabs Configuration
+#+BEGIN_SRC emacs-lisp
+;; ;; change the grouping function for centaur tabs
+;; (setq centaur-tabs-buffer-groups-function 'my/centaur-tabs-buffer-groups)
+;; (setq centaur-tabs-buffer-list-function 'my/centaur-tabs-buffer-list)
+#+END_SRC
+* Key Bindings and Navigations
+** Evil Mode Settings
+*** Include as Part of Words
+#+BEGIN_SRC emacs-lisp
+(modify-syntax-entry ?_ "w")
+(modify-syntax-entry ?- "w")
+(modify-syntax-entry ?\; "w")
+;you need to add the rest
+(add-hook! 'python-mode-hook (modify-syntax-entry ?_ "w"))
+(add-hook! 'ruby-mode-hook (modify-syntax-entry ?_ "w"))
+(add-hook! 'js2-mode-hook (modify-syntax-entry ?_ "w"))
+#+END_SRC
+*** Key Chord Setup: Simultaneous Key Press
+#+BEGIN_SRC emacs-lisp
+(require 'key-chord)
+(key-chord-mode 1)
+;; Define multiple key sequences for escaping
+(setq-default evil-escape-key-sequence "fd")
+(key-chord-define evil-insert-state-map "df" 'evil-normal-state)
+(key-chord-define evil-insert-state-map "fd" 'evil-normal-state)
+#+END_SRC
+** Which Key Settings: Adjust settings to increase display capacity
+#+BEGIN_SRC emacs-lisp
+(custom-set-faces
+ '(which-key-key-face ((t (:inherit font-lock-constant-face :weight bold :height 1.1))))
+ '(which-key-group-key-face ((t (:inherit font-lock-keyword-face :weight bold :height 1.1))))
+ '(which-key-command-description-face ((t (:weight bold :height 1.1))))
+ '(which-key-local-map-description-face ((t (:weight bold :height 1.1))))
+ '(which-key-prefix-key-face ((t (:weight bold :height 1.1)))))
+(after! which-key
+  ;; Allow which-key to automatically adjust the number of columns
+  (setq which-key-max-display-columns nil)
+  ;; Adjust the max height of the which-key window as a percentage of the frame height
+  (setq which-key-side-window-max-height 0.75))
+(setq which-key-idle-delay .1)
+#+END_SRC
+
+** Company Mode (Disabled)
+#+BEGIN_SRC emacs-lisp
+;; (global-company-mode -1);; Disable Company Mode Globally (Disable Auto Completion)
+#+END_SRC
+
+
+* Auto Save
+#+BEGIN_SRC emacs-lisp
+(require 'real-auto-save)
+(setq real-auto-save-interval 1)
+#+END_SRC
+
+* Confirmations & Window Settings
+#+BEGIN_SRC emacs-lisp
+(setq confirm-kill-emacs nil)
+(setq window-combination-resize t)
+#+END_SRC
+
+;; disable deleting trailing whitespaces/tabs
+* Disable WS-Butler Mode
+#+BEGIN_SRC emacs-lisp
+(ws-butler-mode -1)
+(ws-butler-global-mode -1)
+#+END_SRC
+
+* Flycheck and Terraform
+#+BEGIN_SRC emacs-lisp
+;; get rid of tflint error
+;; (after! terraform-mode
+;;   (setq-local flycheck-disabled-checkers '(terraform)))
+;; (after! flycheck
+;;   (setq-default flycheck-disabled-checkers '(terraform-tflint)))
+
+(after! flycheck
+  (setq flycheck-terraform-tflint-executable "/snap/bin/tflint")
+  ;; Disable tflint for Terraform files
+  (setq-default flycheck-disabled-checkers '(terraform-tflint)))
+#+END_SRC
+
+
+* Org-AI Setup
+#+BEGIN_SRC emacs-lisp
+;; org-ai
+;; model, input price, output price
+(setq org-ai-default-chat-model "gpt-4o") ;;$0.01/1K tokens, $0.03/1K tokens
+;;(setq org-ai-default-chat-model "gpt-3.5-turbo-0125")  ;;$0.0005/1K tokens, $0.0015/1K tokens
+;;(setq org-ai-default-chat-model "gpt-3.5-turbo-instruct") ;;$0.0015/1K tokens, $0.0020/1K tokens (larger context window)
+;;(setq org-ai-openai-api-token "<ENTER YOUR API TOKEN HERE>")
+
+(setq org-ai-talk-say-words-per-minute 210)
+(setq org-ai-talk-say-voice "Karen")
+(setq org-ai-default-chat-system-prompt "I work as a Devops engineer so keep that in mind. Good coding and formatting practices are important, as are solutions that implement automation. Most of my work is done in AWS. I use Ubuntu as my operating system. I’m more interested in solutions found in infrastructure as code as opposed to manually clicking stuff. My text editor of choice, and my favorite tool to use is Doom Emacs.
+I don't need you to tell me how to set up Boto3, AWS CLI, AWS SDK, that's done. Give me aws CLI commands unless I ask for a script. I also expect you to use argparse to  provide  examples of how to use the code in the script, to  follow proper documentation and commenting in the scripts/snippets you provide. Follow good code formatting practices so that it passes my pre-commit hook. I have these that it must pass: flake8, black, pyupgrade, terraform fmt, terraform validate, beautify, yamlfmt. Also when  you're making modifications to a script,  especially a python script,  you need to give me the entire python script again. Don't give me the snippet that you change give me the entire script all over,  without abbreviating anything. Do not remove any functionality from my scripts unless you have a very good reason to be removing it or I told you to. ")
+(setq org-ai-default-inject-sys-prompt-for-all-messages nil) ;;change this to true if having issues with chatgpt remembering prompts
+(org-ai-global-mode)
+(org-ai-mode)
+#+END_SRC
+
+* Whisper AI Settings
+#+BEGIN_SRC emacs-lisp
+;; whisper ai
+(setq whisper-model "small") ;;accuracy vs speed/size
+(setq whisper-use-threads 12) ;; default min(4, num of cores)
+#+END_SRC
+
+* VTerm Shell Configuration
+#+BEGIN_SRC emacs-lisp
+(setq vterm-shell "/bin/zsh")
+#+END_SRC
+
+
+
+* Projectile Configuration
+#+BEGIN_SRC emacs-lisp
+(after! projectile
+  (setq projectile-project-search-path '(("~/repositories/bitbucket/" . 2)))
+  (setq projectile-enable-caching nil))
+#+END_SRC
+
+* Tramp Debugging and Optimization
+#+BEGIN_SRC emacs-lisp
+;; tramp debugging
+;; (setq tramp-verbose 10)
+;; (setq tramp-debug-buffer t)
+
+;;;;;;tramp optimization;;;;;;;
+(setq remote-file-name-inhibit-cache nil)
+(setq tramp-completion-reread-directory-timeout nil)
+(setq tramp-verbose 0)
+
+;; I don't believe you can run shell commands if you use this below,
+;; but it might be faster to transfer files.
+;; (setq tramp-default-method "scp")
+
+(setq tramp-chunksize 5000)
+#+END_SRC
+
+* VTerm Cursor Issue Fix
+#+BEGIN_SRC emacs-lisp
+;; fix vterm cursor issue
+(defun my-vterm-send-q-adjust-cursor ()
+  "Send 'q' to vterm and adjust the cursor based on current evil state after a delay."
+  (interactive)
+  (vterm-send-key "q")
+  (run-with-timer 0.1 nil
+                  (lambda ()
+                    (when (and (eq major-mode 'vterm-mode)
+                               (evil-insert-state-p))
+                      (setq-local cursor-type 'bar)))))
+(with-eval-after-load 'vterm
+  (define-key vterm-mode-map (kbd "q") 'my-vterm-send-q-adjust-cursor))
+#+END_SRC
+
+* AWS Mode Configuration
+#+BEGIN_SRC emacs-lisp
+(use-package aws-mode
+  :load-path "~/repositories/github/aws.el/"
+  :custom
+  (aws-vault t)
+  (aws-output "json")
+  (aws-organizations-account "root"))
+(use-package aws-evil
+  :after (aws-mode evil)
+  :load-path "~/repositories/github/aws.el/")
+#+END_SRC
+
+* Dired Send to Trash
+#+BEGIN_SRC emacs-lisp
+(setq delete-by-moving-to-trash t)
+#+END_SRC
+
+* Tree-Sitter Setup
+#+BEGIN_SRC emacs-lisp
+;; run batch.sh here first https://github.com/casouri/tree-sitter-module
+(setq treesit-extra-load-path '("~/repositories/github/casouri/tree-sitter-module/dist"))
+(add-to-list 'major-mode-remap-alist '(python-mode . python-ts-mode))
+(use-package treesit-auto
+  :custom
+  (treesit-auto-install 'prompt)
+  :config
+  (treesit-auto-add-to-auto-mode-alist 'all)
+  (global-treesit-auto-mode))
+#+END_SRC
+
+* Python LSP Configuration
+#+BEGIN_SRC emacs-lisp
+(after! python
+  (setq python-shell-interpreter "python3"))
+(use-package! lsp-pyright
+  :hook (python-mode . (lambda ()
+                         (require 'lsp-pyright)
+                         (lsp)))
+  :config
+  (setq lsp-pyright-python-executable-cmd "python3"))
+
+(defun my/python-mode-setup ()
+  "Custom setup for Python files to activate lsp-mode."
+  (when (and buffer-file-name
+             (string-match-p "\\.py\\'" buffer-file-name))
+    (lsp)))
+(add-hook 'find-file-hook 'my/python-mode-setup)
+#+END_SRC
+
+* LSP Mode Configuration
+#+BEGIN_SRC emacs-lisp
+(use-package lsp-mode
+  :init
+  (setq lsp-enable-links t)
+  (setq lsp-auto-guess-root t) ; Automatically guess the project root
+  (setq lsp-semantic-tokens-enable t)
+  (setq lsp-semantic-tokens-honor-refresh-requests t)
+  :config
+  ;; Disable to avoid errors
+  (setq lsp-disabled-clients '(tfmls tfmls semgrep-ls)))
+#+END_SRC
+
+* Terraform Mode Configuration
+#+BEGIN_SRC emacs-lisp
+(use-package terraform-mode
+  :hook (terraform-mode . lsp)
+  :config
+  (setq lsp-enabled-clients '(terraform-ls))
+  (setq terraform-format-on-save nil))
+#+END_SRC
+
+* Terraform LSP Configuration
+#+BEGIN_SRC emacs-lisp
+(after! lsp-mode
+  (lsp-register-client
+   (make-lsp-client
+    :new-connection (lsp-stdio-connection '("/usr/bin/terraform-ls" "serve"))
+    :major-modes '(terraform-mode)
+    :server-id 'terraform-ls))
+  (setq lsp-terraform-ls-enable-show-reference t)
+  (setq lsp-terraform-ls-prefill-required-fields t)
+  (setq lsp-terraform-ls-validate-on-save t))
+#+END_SRC
+
+* Shell LSP Configuration
+#+BEGIN_SRC emacs-lisp
+(defun my/sh-mode-setup ()
+  "Custom setup for Shell script files to activate lsp-mode."
+  (when (and buffer-file-name
+             (string-match-p "\\.sh\\'" buffer-file-name))
+    (lsp)))
+(add-hook 'find-file-hook 'my/sh-mode-setup)
+#+END_SRC
+
+* Java Configuration
+#+BEGIN_SRC emacs-lisp
+(use-package! lsp-mode
+  :commands lsp
+  :hook ((java-mode . lsp)
+         (java-ts-mode . lsp))  ;; Add java-ts-mode here
+  :config
+  (setq lsp-enable-file-watchers nil))
+
+(use-package! lsp-java
+  :after lsp
+  :config
+  (add-hook 'java-mode-hook #'lsp)
+  (add-hook 'java-ts-mode-hook #'lsp))  ;; Add java-ts-mode here
+#+END_SRC
+
+* Gradle Mode Configuration
+#+BEGIN_SRC emacs-lisp
+(use-package! gradle-mode
+  :hook (java-mode . gradle-mode)
+  :config
+  (setq gradle-use-gradlew t))  ;; Use the Gradle wrapper if available
+#+END_SRC
+
+* PowerShell Configuration
+#+BEGIN_SRC emacs-lisp
+(use-package powershell
+  :mode ("\\.ps1\\'" . powershell-mode)
+  :config
+  (setq powershell-indent 2))
+
+(use-package lsp-mode
+  :commands lsp
+  :hook (powershell-mode . lsp)
+  :config
+  (setq lsp-prefer-flymake nil))
+
+(use-package lsp-pwsh
+  :ensure t
+  :after lsp-mode)
+
+;; (setq shell-file-name "pwsh")
+(setq explicit-shell-file-name "pwsh")
+(setq explicit-pwsh.exe-args '("--nologo"))
+
+(map! :after powershell
+      :map powershell-mode-map
+      :localleader
+      :desc "Run Script" "r" #'powershell-run-file)
+#+END_SRC
+
+* Disable recentf-mode
+#+BEGIN_SRC emacs-lisp
+(recentf-mode -1)
+(remove-hook 'doom-first-file-hook 'recentf-mode)
+#+END_SRC
+
+* Winner Mode Configuration
+#+BEGIN_SRC emacs-lisp
+(use-package! winner
+  :ensure nil
+  :init
+  (setq winner-dont-bind-my-keys t)
+  (setq winner-boring-buffers '("*Completions*" "*Help*" "*Apropos*" "*Buffer List*" "*info*" "*Compile-Log*"))
+  :hook (after-init . winner-mode)
+  :bind (("M-s-<left>" . winner-undo)
+         ("M-s-<right>" . winner-redo)))
+#+END_SRC
+
+* PlantUML Configuration
+#+BEGIN_SRC emacs-lisp
+(setq plantuml-executable-path "/usr/bin/plantuml")
+(setq plantuml-default-exec-mode 'executable)
+(use-package! plantuml-mode
+  :mode ("\\.plantuml\\'" . plantuml-mode)
+  ("\\.puml\\'" . plantuml-mode)
+  :config
+  (setq plantuml-output-type "png"))
+(after! org
+  (setq org-plantuml-executable-path plantuml-executable-path)
+  (add-to-list 'org-babel-load-languages '(plantuml . t)))
+#+END_SRC
+
+* VTerm Configuration
+#+BEGIN_SRC emacs-lisp
+(use-package vterm
+  :ensure nil
+  :config
+  ;; (setq vterm-buffer-name-string "vterm %s")
+  (setq vterm-kill-buffer-on-exit t)  ; Automatically kill the buffer on exit
+  (setq vterm-max-scrollback 100000))
+#+END_SRC
+
+* CSV and TSV Modes
+#+BEGIN_SRC emacs-lisp
+(add-to-list 'auto-mode-alist '("\\.[Cc][Ss][Vv]\\'" . csv-mode))
+(add-to-list 'auto-mode-alist '("\\.[Tt][Ss][Vv]\\'" . tsv-mode))
+
+(use-package csv-mode
+  :ensure t
+  :hook (csv-mode . csv-mode-setup))
+
+(defun csv-mode-setup ()
+  "Setup csv-mode."
+  (setq csv-separators '("," ";" "|" "	")) ; Add more separators if needed
+  (csv-align-mode 1) ; Enable alignment mode
+  (csv-field-index-mode 1)) ; Show field index in the mode line
+
+(add-hook 'csv-mode-hook 'csv-guess-set-separator)
+#+END_SRC
+
+* Org-Babel Languages
+#+BEGIN_SRC emacs-lisp
+(org-babel-do-load-languages 'org-babel-load-languages '(
+                                                         (emacs-lisp . t)
+                                                         (eshell . t)
+                                                         (perl . t)
+                                                         (python . t)
+                                                         (shell . t)
+                                                         (sql . t)
+                                                         (ruby . t)))
+#+END_SRC
+
+* Org-Download Setup
+#+BEGIN_SRC emacs-lisp
+(use-package! org-download
+  :after org
+  :config
+  (setq org-download-image-dir "~/images")
+  ;; Automatically insert and display the image
+  (setq org-download-method 'attach)
+  ;; Enable dragging and dropping of images into Org files
+  (add-hook 'dired-mode-hook 'org-download-enable)
+  ;; Automatically toggle inline images when an image is inserted
+  (add-hook 'org-mode-hook 'org-download-enable)
+  (add-hook 'org-mode-hook 'org-display-inline-images))
+#+END_SRC
